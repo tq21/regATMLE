@@ -1,5 +1,7 @@
 `%+%` <- function(a, b) paste0(a, b)
 timestamp <- format(Sys.Date(), "%m%d") %+% "_" %+% format(Sys.time(), "%H%M%S")
+.libPaths(c("/global/home/users/skyqiu/R/x86_64-pc-linux-gnu-library/4.4",
+            .libPaths()))
 library(purrr)
 library(origami)
 library(hal9001)

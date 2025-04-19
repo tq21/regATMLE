@@ -119,7 +119,7 @@ target <- function(W,
           beta_cur <- beta_cur + dx*sign(PnEIC_cur)*direction
           sn <- 0.001*sqrt(var(eic, na.rm = TRUE))/(sqrt(length(A)) * log(length(A)))
           cur_iter <- cur_iter + 1
-          print(PnEIC_cur)
+          #print(PnEIC_cur)
         }
       } else if (method == "cv reg tmle") {
         # CV-selected regularized targeting
@@ -176,70 +176,8 @@ target <- function(W,
                                           X_unpenalized = NULL)
     pred <- as.numeric(x_basis%*%matrix(beta_cur))
 
-
-
-    # compute canonical gradient
-    cate_pred <- as.numeric(phi_W_cur%*%beta_cur)
-    # use the projection of the canonical gradient for TMLE update
-    eic <- eic_ate(QW1 = theta+(1-g1W)*cate_pred,
-                   QW0 = theta-g1W*cate_pred,
-                   psi = mean(cate_pred),
-                   A = A,
-                   g1W = g1W,
-                   Y = Y,
-                   QWA = theta+(A-g1W)*cate_pred)
-
-
-    score_mat <- (Y-theta-(A-g1W)*cate_pred)*(A-g1W)*phi_W_cur
-
-    # use the delta-method based gradient for TMLE update
-    eic_delta <- eic_ate_wm(x_basis = as.matrix(phi_W_cur),
-                            g1W = g1W,
-                            A = A,
-                            Y = Y,
-                            theta = theta,
-                            tau = cate_pred)$eic
-
-    eic_delta_kappa <- eic_ate_wm(x_basis = as.matrix(phi_W_cur),
-                                  g1W = g1W,
-                                  A = A,
-                                  Y = Y,
-                                  theta = theta,
-                                  tau = cate_pred)$kappa
-
-
-    if(dim(score_mat)[2]<2){
-      eic_proj<-eic
-      eic_proj_cv<-eic
-    }else{
-      #Weak Regularization
-      proj_fit <- glmnet(x = score_mat,
-                         y = eic,
-                         intercept = FALSE,
-                         lambda = 1e-5,
-                         alpha = 1)
-
-      eic_proj <- predict(proj_fit, newx = score_mat)
-
-      #CV
-
-      proj_fit <- cv.glmnet(x = score_mat,
-                            y = eic,
-                            intercept = FALSE,
-                            parallel = TRUE,
-                            alpha = 1)
-      eic_proj_cv <-predict(proj_fit, newx = score_mat, s = "lambda.min")
-    }
-
-
-
     return(list(lambda = lambda_seq[.j],
                 pred = pred,
-                eic = eic,
-                eic_proj = eic_proj,
-                eic_proj_cv = eic_proj_cv,
-                eic_delta = eic_delta,
-                eic_delta_kappa=eic_delta_kappa,
                 x_basis = x_basis,
                 coefs = beta_cur,
                 non_zero = non_zero_cur))

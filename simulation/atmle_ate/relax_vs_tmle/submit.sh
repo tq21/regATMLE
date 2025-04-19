@@ -1,6 +1,6 @@
 #!/bin/bash
 # Job name:
-#SBATCH --job-name=atmle_target_seq
+#SBATCH --job-name=relax_vs_tmle
 #
 # Partition:
 #SBATCH --partition=savio3
@@ -13,8 +13,8 @@
 #
 # Number of nodes for use case:
 #SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16
+#SBATCH --ntasks=7
+#SBATCH --cpus-per-task=5
 #
 # Mail type:
 #SBATCH --mail-type=all
@@ -24,6 +24,12 @@
 
 module load r
 
-R CMD BATCH --no-save run.R logs/run.Rout &
+R CMD BATCH --no-save run_dgp_1.R logs/run_dgp_1.Rout &
+R CMD BATCH --no-save run_dgp_2_gamma_0.5.R logs/run_dgp_2_gamma_0.5.Rout &
+R CMD BATCH --no-save run_dgp_2_gamma_1.R logs/run_dgp_2_gamma_1.Rout &
+R CMD BATCH --no-save run_dgp_2_gamma_2.R logs/run_dgp_2_gamma_2.Rout &
+R CMD BATCH --no-save run_dgp_3_gamma_0.5.R logs/run_dgp_3_gamma_0.5.Rout &
+R CMD BATCH --no-save run_dgp_3_gamma_1.R logs/run_dgp_3_gamma_1.Rout &
+R CMD BATCH --no-save run_dgp_3_gamma_2.R logs/run_dgp_3_gamma_2.Rout &
 
 wait

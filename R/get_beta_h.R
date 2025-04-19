@@ -13,6 +13,6 @@ get_beta_h <- function(x_basis,
       IM_inv <- solve(IM + diag(1e-3, nrow(IM), ncol(IM)))
     }
   }
-  beta_h <- as.vector(IM_inv %*% colMeans(x_basis))
+  beta_h <- as.vector(colMeans(x_basis) %*% IM_inv)
   return(beta_h)
 }

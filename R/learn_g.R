@@ -56,11 +56,10 @@ learn_g <- function(W,
     lrnr_stack <- Stack$new(method)
     lrnr <- make_learner(Pipeline, Lrnr_cv$new(lrnr_stack),
                          Lrnr_cv_selector$new(loss_loglik_binomial))
-
     task <- sl3_Task$new(data = data.table(W, A = A), covariates = colnames(W),
                          outcome = "A", outcome_type = "binomial")
     fit <- lrnr$train(task)
-    pred <- lrnr$predict(task)
+    pred <- fit$predict(task)
 
   } else if (method == "glm") {
 

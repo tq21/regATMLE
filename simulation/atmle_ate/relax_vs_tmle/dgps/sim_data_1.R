@@ -1,4 +1,5 @@
 sim_data <- function(n,
+                     gamma = 0.5,
                      counter_A = NULL) {
   # error
   UY <- rnorm(n, 0, 1)

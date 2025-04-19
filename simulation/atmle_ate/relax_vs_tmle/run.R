@@ -1,5 +1,5 @@
-.libPaths(c("/global/home/users/skyqiu/R/x86_64-pc-linux-gnu-library/4.2",
-            .libPaths()))
+`%+%` <- function(a, b) paste0(a, b)
+timestamp <- format(Sys.Date(), "%m%d") %+% "_" %+% format(Sys.time(), "%H%M%S")
 library(purrr)
 library(origami)
 library(hal9001)
@@ -12,8 +12,6 @@ library(devtools)
 load_all()
 options(sl3.verbose = TRUE)
 registerDoMC(cores = availableCores()-1)
-`%+%` <- function(a, b) paste0(a, b)
-timestamp <- format(Sys.Date(), "%m%d") %+% "_" %+% format(Sys.time(), "%H%M%S")
 set.seed(123)
 B <- 200
 n_seq <- seq(500, 2000, 500)

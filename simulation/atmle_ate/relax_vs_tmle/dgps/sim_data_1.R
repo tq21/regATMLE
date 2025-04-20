@@ -13,8 +13,9 @@ sim_data <- function(n,
   if (is.null(counter_A)) {
     #A <- rbinom(n, 1, plogis(-0.25*W1+W2))
     #A <- rbinom(n, 1, plogis(-0.25*W1^3+7*W2))
-    A <- rbinom(n, 1, plogis(-0.25*W1^3+5*W2)) # good
+    #A <- rbinom(n, 1, plogis(-0.25*W1+5*W2)) # good
     #A <- rbinom(n, 1, plogis(-0.25*W1+3*W2))
+    A <- rbinom(n, 1, plogis(-0.25*W1+0.5*W2))
   } else {
     A <- rep(counter_A, n)
   }

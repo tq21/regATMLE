@@ -15,17 +15,17 @@ load_all()
 options(sl3.verbose = TRUE)
 registerDoMC(cores = availableCores()-1)
 set.seed(123)
-B <- 200
+B <- 500
 n_seq <- seq(500, 2000, 500)
 
 run <- function(sim_data, gamma = 0.5) {
   # make sl3 learners
   learner_list <- list(
     Lrnr_xgboost$new(max_depth = 4, nrounds = 20, verbose = 0),
-    Lrnr_earth$new(degree = 3),
-    Lrnr_gam$new(),
-    Lrnr_glm$new(),
-    Lrnr_glmnet$new()
+    Lrnr_xgboost$new(max_depth = 5, nrounds = 20, verbose = 0),
+    Lrnr_ranger$new(),
+    Lrnr_earth$new(degree = 2),
+    Lrnr_gam$new()
   )
 
   res_df <- map_dfr(n_seq, function(.n) {
@@ -42,8 +42,8 @@ run <- function(sim_data, gamma = 0.5) {
                      A = A,
                      method = learner_list,
                      folds = folds,
-                     g_bounds = c(0, 1),
-                     cross_fit_nuisance = TRUE)
+                     g_bounds = c(0.01, 0.99),
+                     cross_fit_nuisance = FALSE)
 
       # estimate E(Y|W)
       theta <- learn_theta(W = W,
@@ -53,7 +53,7 @@ run <- function(sim_data, gamma = 0.5) {
                            folds = folds,
                            family = "gaussian",
                            theta_bounds = NULL,
-                           cross_fit_nuisance = TRUE)
+                           cross_fit_nuisance = FALSE)
 
       # estimate CATE
       tau_A <- learn_tau_A(W = W,

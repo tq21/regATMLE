@@ -840,3 +840,16 @@ Loading required package: usethis
 [1] "n = 2000, run: 191"
 [1] "n = 2000, run: 192"
 [1] "n = 2000, run: 193"
+[1] "n = 2000, run: 194"
+[1] "n = 2000, run: 195"
+[1] "n = 2000, run: 196"
+[1] "n = 2000, run: 197"
+[1] "n = 2000, run: 198"
+[1] "n = 2000, run: 199"
+[1] "n = 2000, run: 200"
+There were 50 or more warnings (use warnings() to see the first 50)
+> write.csv(res_df, file = "out/dgp_" %+% dgp %+% "_" %+% timestamp %+% ".csv", row.names = FALSE)
+> 
+> proc.time()
+     user    system   elapsed 
+21112.604   777.122 14090.094 

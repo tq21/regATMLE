@@ -1,12 +1,18 @@
 library(dplyr)
-source("dgps/sim_data_2.R")
+source("dgps/sim_data_3.R")
 truth <- get_truth()
 
-res_df <- read.csv("out/dgp_2_2_0420_090635.csv")
+res_df <- read.csv("out/dgp_3_0.5_0420_091919.csv")
 
 res_df %>%
-  summarize(mse_relax = mean((psi_relax - truth)^2),
+  summarize(abs_bias_relax = abs(mean(psi_relax - truth)),
+            abs_bias_tmle = abs(mean(psi_tmle - truth)),
+            se_relax = sd(psi_relax),
+            se_tmle = sd(psi_tmle),
+            mse_relax = mean((psi_relax - truth)^2),
             mse_tmle = mean((psi_tmle - truth)^2),
-            coverage_relax = mean(truth >= lower_relax & truth <= upper_relax),
-            coverage_tmle = mean(truth >= lower_tmle & truth <= upper_tmle),
+            cover_relax = mean(truth >= lower_relax & truth <= upper_relax),
+            cover_tmle = mean(truth >= lower_tmle & truth <= upper_tmle),
+            oracle_cover_relax = mean(truth >= psi_relax - 1.96 * sd(psi_relax) & truth <= psi_relax + 1.96 * sd(psi_relax)),
+            oracle_cover_tmle = mean(truth >= psi_tmle - 1.96 * sd(psi_tmle) & truth <= psi_tmle + 1.96 * sd(psi_tmle)),
             .by = "n")

@@ -12,7 +12,7 @@ library(data.table)
 library(sl3)
 library(devtools)
 load_all()
-options(sl3.verbose = TRUE)
+options(sl3.verbose = FALSE)
 registerDoMC(cores = availableCores()-1)
 set.seed(123)
 B <- 500
@@ -86,13 +86,12 @@ run <- function(sim_data, gamma = 0.5) {
 
       # relaxed-HAL
       target_args_relax <- target_args
-      target_args_relax$method <- "relax analytic"
+      target_args_relax$method <- "relaxed"
       tau_relax <- do.call(target, target_args_relax)
 
       # arguments for HAL-TMLE
       target_args_tmle <- target_args
-      target_args_tmle$method <- "weak reg tmle"
-      target_args_tmle$grad_proj <- FALSE
+      target_args_tmle$method <- "oneshot"
       tau_tmle <- do.call(target, target_args_tmle)
 
       # point estimate and inference
@@ -107,14 +106,14 @@ run <- function(sim_data, gamma = 0.5) {
                                 Y = Y,
                                 theta = theta,
                                 tau = .relax$pred,
-                                eic_method = "diag")
+                                eic_method = "svd_pseudo_inv")
         eic_tmle <- eic_ate_wm(x_basis = .tmle$x_basis,
                                g1W = g1W,
                                A = A,
                                Y = Y,
                                theta = theta,
                                tau = .tmle$pred,
-                               eic_method = "diag")
+                               eic_method = "svd_pseudo_inv")
         se_relax <- sqrt(var(eic_relax$eic, na.rm = TRUE) / .n)
         se_tmle <- sqrt(var(eic_tmle$eic, na.rm = TRUE) / .n)
         lower_relax <- psi_relax - 1.96 * se_relax

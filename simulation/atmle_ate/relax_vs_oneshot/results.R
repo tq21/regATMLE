@@ -2,7 +2,7 @@ library(dplyr)
 source("dgps/sim_data_3.R")
 truth <- get_truth()
 
-res_df <- read.csv("out/dgp_3_0.5_0420_091919.csv")
+res_df <- read.csv("out/dgp_3_1_0518_085109.csv")
 
 res_df %>%
   summarize(abs_bias_relax = abs(mean(psi_relax - truth)),

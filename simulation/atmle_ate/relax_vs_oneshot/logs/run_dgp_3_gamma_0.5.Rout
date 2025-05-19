@@ -2052,5 +2052,5 @@ There were 50 or more warnings (use warnings() to see the first 50)
 > write.csv(res_df, file = "out/dgp_" %+% dgp %+% "_" %+% gamma %+% "_" %+% timestamp %+% ".csv", row.names = FALSE)
 > 
 > proc.time()
-    user   system  elapsed 
-44248.19  2561.11 39673.96 
+     user    system   elapsed 
+37988.336  1677.962 33458.923 

@@ -12,7 +12,7 @@
 #SBATCH --time=72:00:00
 #
 # Number of nodes for use case:
-#SBATCH --nodes=1
+#SBATCH --nodes=7
 #SBATCH --ntasks=7
 #SBATCH --cpus-per-task=10
 #

@@ -15,8 +15,8 @@ load_all()
 options(sl3.verbose = FALSE)
 registerDoMC(cores = availableCores()-1)
 set.seed(123)
-B <- 5#500
-n_seq <- 500#seq(500, 2000, 500)
+B <- 1000
+n_seq <- seq(500, 2000, 500)
 
 run <- function(sim_data, gamma = 0.5) {
   # make sl3 learners

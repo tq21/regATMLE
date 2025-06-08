@@ -1,10 +1,13 @@
 library(dplyr)
-source("dgps/sim_data_3.R")
+source("dgps/sim_data_2.R")
 truth <- get_truth()
 
-res_df <- read.csv("out/dgp_3_1_0518_085109.csv")
+res_df <- read.csv("out/dgp_2_0.5_0608_130212.csv")
+
+# TODO: add lambda
 
 res_df %>%
+  filter(j == 5) %>%
   summarize(abs_bias_relax = abs(mean(psi_relax - truth)),
             abs_bias_tmle = abs(mean(psi_tmle - truth)),
             se_relax = sd(psi_relax),

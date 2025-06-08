@@ -11,10 +11,7 @@ target <- function(W,
                    basis_list,
                    X_hal,
                    fit,
-                   dx,
-                   max_iter,
                    eic_method = "svd_pseudo_inv",
-                   grad_proj = FALSE,
                    seq = FALSE,
                    nlambda_max = 10,
                    verbose = FALSE,
@@ -76,53 +73,37 @@ target <- function(W,
         beta_cur <- as.numeric(coef(fit_relax))
       } else if (method == "oneshot") {
         x_basis <- as.matrix(phi_W_cur)
-        eic_method <- "svd_pseudo_inv"
         n <- nrow(x_basis)
         IM <- t(x_basis) %*% diag(g1W*(1-g1W)) %*% x_basis / n
-        if (dim(x_basis)[2] == 1) {
-          IM_inv <- solve(IM)
-        } else {
+        IM_inv <- tryCatch({
+          solve(IM)
+        }, error = function(e) {
           if (eic_method == "svd_pseudo_inv") {
-            # SVD-based pseudo-inverse
-            IM_inv <- svd_pseudo_inv(IM)
+            svd_pseudo_inv(IM)
           } else if (eic_method == "diag") {
-            IM_inv <- solve(IM + diag(1e-3, nrow(IM), ncol(IM)))
+            solve(IM + diag(1e-3, nrow(IM), ncol(IM)))
+          } else {
+            stop("Unknown eic_method specified.")
           }
-        }
-
-        clever_cov <- drop(IM_inv %*% colMeans(x_basis))
-        H <-  (A-g1W)*drop(x_basis %*% clever_cov)
+        })
+        clever_cov <- as.vector(IM_inv %*% colMeans(x_basis))
+        H <- (A-g1W)*as.vector(x_basis %*% clever_cov)
         tau <- as.numeric(x_basis %*% beta_cur)
         R <- Y-theta-(A-g1W)*tau
         epsilon <- sum(H*R)/sum(H*H)
         beta_cur <- beta_cur+epsilon*clever_cov
       }
-      beta_cur[is.na(beta_cur)] <- 0
-
-      # compute EIC
-      cate_pred <- as.numeric(phi_W_cur%*%beta_cur)
-      eic <- eic_ate_wm(x_basis = as.matrix(phi_W_cur),
-                        g1W = g1W,
-                        A = A,
-                        Y = Y,
-                        theta = theta,
-                        tau = cate_pred)$eic
-      if (verbose) print(mean(eic))
     } else {
       beta_cur <- mean(pseudo_outcome[delta == 1])
     }
-
-    x_basis <- make_counter_design_matrix(basis_list = basis_list_cur,
-                                          X_counterfactual = as.matrix(X),
-                                          X_unpenalized = NULL)
-    pred <- as.numeric(x_basis%*%matrix(beta_cur))
+    beta_cur[is.na(beta_cur)] <- 0
+    cate_pred <- as.numeric(phi_W_cur%*%beta_cur)
 
     return(list(lambda = lambda_cur,
-                pred = pred,
-                x_basis = x_basis,
+                pred = cate_pred,
+                x_basis = as.matrix(phi_W_cur),
                 coefs = beta_cur,
-                non_zero = non_zero_cur,
-                eic = eic))
+                non_zero = non_zero_cur))
   })
 
   return(res_list)

@@ -15,8 +15,8 @@ load_all()
 options(sl3.verbose = FALSE)
 registerDoMC(cores = availableCores()-1)
 set.seed(123)
-B <- 500
-n_seq <- seq(500, 2000, 500)
+B <- 5#500
+n_seq <- 500#seq(500, 2000, 500)
 
 run <- function(sim_data, gamma = 0.5) {
   # make sl3 learners
@@ -37,13 +37,17 @@ run <- function(sim_data, gamma = 0.5) {
       Y <- data$Y
       folds <- make_folds(n = .n, V = 5)
 
+      # data-adaptive truncation of g1W
+      n_eff <- .n # number of observed is there is missing
+      g_bounds <- c(5/sqrt(n_eff)/log(n_eff), 1-5/sqrt(n_eff)/log(n_eff))
+
       # estimate P(A=1|W)
       g1W <- learn_g(W = W,
                      A = A,
                      method = learner_list,
                      folds = folds,
-                     g_bounds = c(0.01, 0.99),
-                     cross_fit_nuisance = FALSE)
+                     g_bounds = g_bounds,
+                     cross_fit_nuisance = TRUE)
 
       # estimate E(Y|W)
       theta <- learn_theta(W = W,
@@ -52,8 +56,8 @@ run <- function(sim_data, gamma = 0.5) {
                            method = learner_list,
                            folds = folds,
                            family = "gaussian",
-                           theta_bounds = NULL,
-                           cross_fit_nuisance = FALSE)
+                           theta_bounds = c(-Inf, Inf),
+                           cross_fit_nuisance = TRUE)
 
       # estimate CATE
       tau_A <- learn_tau_A(W = W,
@@ -62,7 +66,7 @@ run <- function(sim_data, gamma = 0.5) {
                            theta = theta,
                            g1W = g1W,
                            delta = rep(1, .n),
-                           v_folds = 5,
+                           foldid = folds2foldvec(folds),
                            weights = rep(1, .n),
                            enumerate_basis_args = list(max_degree = 2,
                                                        smoothness_orders = 1),
@@ -79,8 +83,8 @@ run <- function(sim_data, gamma = 0.5) {
                           basis_list = tau_A$basis_list,
                           X_hal = tau_A$X_hal,
                           fit = tau_A$fit,
-                          dx = 1e-5,
-                          max_iter = 5000,
+                          seq = TRUE,
+                          nlambda_max = 80,
                           verbose = FALSE,
                           browse = FALSE)
 
@@ -116,14 +120,15 @@ run <- function(sim_data, gamma = 0.5) {
                                eic_method = "svd_pseudo_inv")
         se_relax <- sqrt(var(eic_relax$eic, na.rm = TRUE) / .n)
         se_tmle <- sqrt(var(eic_tmle$eic, na.rm = TRUE) / .n)
-        lower_relax <- psi_relax - 1.96 * se_relax
-        upper_relax <- psi_relax + 1.96 * se_relax
-        lower_tmle <- psi_tmle - 1.96 * se_tmle
-        upper_tmle <- psi_tmle + 1.96 * se_tmle
+        lower_relax <- psi_relax + qnorm(0.025) * se_relax
+        upper_relax <- psi_relax + qnorm(0.975) * se_relax
+        lower_tmle <- psi_tmle + qnorm(0.025) * se_tmle
+        upper_tmle <- psi_tmle + qnorm(0.975) * se_tmle
 
         return(data.frame(n = .n,
                           B = .b,
                           j = .j,
+                          lambda = .relax$lambda,
                           psi_relax = psi_relax,
                           psi_tmle = psi_tmle,
                           lower_relax = lower_relax,

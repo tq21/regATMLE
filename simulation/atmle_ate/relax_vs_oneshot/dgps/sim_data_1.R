@@ -5,9 +5,9 @@ sim_data <- function(n,
   UY <- rnorm(n, 0, 1)
 
   # baseline covariates
-  W1 <- round(runif(n, -1, 1), 2)
-  W2 <- round(runif(n, -1, 1), 2)
-  W3 <- round(runif(n, -1, 1), 2)
+  W1 <- round(runif(n, -1, 1), 3)
+  W2 <- round(runif(n, -1, 1), 3)
+  W3 <- round(runif(n, -1, 1), 3)
 
   # treatment
   if (is.null(counter_A)) {

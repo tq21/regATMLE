@@ -45,66 +45,37 @@ learn_theta <- function(W,
     method <- get_default_sl3_learners(family)
   }
 
-  if (is.null(theta_bounds)) {
-    if (family == "gaussian") {
-      theta_bounds <- c(-Inf, Inf)
-    } else if (family == "binomial") {
-      theta_bounds <- c(0.01, 0.99)
-    }
-  }
-
   pred <- numeric(length(Y))
 
   if (is.list(method)) {
     lrnr_stack <- Stack$new(method)
-    lrnr_theta_tilde <- NULL
-    task_theta_tilde <- NULL
     if (family == "gaussian") {
-      lrnr_theta_tilde <- make_learner(
-        Pipeline, Lrnr_cv$new(lrnr_stack),
-        Lrnr_cv_selector$new(loss_squared_error)
-      )
-      task_train <- sl3_Task$new(
-        data = data.table(W, Y = Y)[delta == 1, , drop = FALSE],
-        covariates = colnames(W), outcome = "Y", outcome_type = "continuous"
-      )
-      Y_tmp <- Y
-      Y_tmp[delta == 0] <- 0
-      task_pred <- sl3_Task$new(
-        data = data.table(W, Y = Y_tmp),
-        covariates = colnames(W), outcome = "Y", outcome_type = "continuous"
-      )
+      lrnr_theta <- make_learner(Pipeline, Lrnr_cv$new(lrnr_stack),
+                                 Lrnr_cv_selector$new(loss_squared_error))
+      task_theta <- sl3_Task$new(data = data.table(W, Y = Y),
+                                 covariates = colnames(W), outcome = "Y",
+                                 folds = folds,
+                                 outcome_type = "continuous")
     } else if (family == "binomial") {
-      lrnr_theta_tilde <- make_learner(
-        Pipeline, Lrnr_cv$new(lrnr_stack),
-        Lrnr_cv_selector$new(loss_loglik_binomial)
-      )
-      task_train <- sl3_Task$new(
-        data = data.table(W, Y = Y)[delta == 1, , drop = FALSE],
-        covariates = colnames(W), outcome = "Y", outcome_type = "binomial"
-      )
-      Y_tmp <- Y
-      Y_tmp[delta == 0] <- 0
-      task_pred <- sl3_Task$new(
-        data = data.table(W, Y = Y_tmp),
-        covariates = colnames(W), outcome = "Y", outcome_type = "binomial"
-      )
+      lrnr_theta <- make_learner(Pipeline, Lrnr_cv$new(lrnr_stack),
+                                 Lrnr_cv_selector$new(loss_loglik_binomial))
+      task_theta <- sl3_Task$new(data = data.table(W, Y = Y),
+                                 covariates = colnames(W), outcome = "Y",
+                                 folds = folds,
+                                 outcome_type = "binomial")
     }
 
-    fit_theta_tilde <- lrnr_theta_tilde$train(task_train)
-    pred <- .bound(fit_theta_tilde$predict(task_pred), theta_bounds)
+    fit_theta <- lrnr_theta$train(task_theta)
+    pred <- .bound(fit_theta$predict(task_theta), theta_bounds)
   } else if (method == "glm") {
-    X <- data.frame(W) # USE MODEL MATRIX, SOMETIMES CHARACTERS MESS UP
+    X <- data.frame(W)
 
     if (cross_fit_nuisance) {
       # cross fit
       walk(folds, function(.x) {
         train_idx <- .x$training_set
         valid_idx <- .x$validation_set
-        fit <- glm(Y[train_idx][delta[train_idx] == 1] ~ .,
-                   data = X[train_idx, ][delta[train_idx] == 1, ],
-                   family = family
-        )
+        fit <- glm(Y[train_idx] ~ ., data = X[train_idx, ], family = family)
         pred[valid_idx] <<- .bound(as.numeric(predict(
           fit,
           newdata = X[valid_idx, ], type = "response"
@@ -112,7 +83,7 @@ learn_theta <- function(W,
       })
     } else {
       # no cross fit
-      fit <- glm(Y[delta == 1] ~ ., data = X[delta == 1, ], family = family)
+      fit <- glm(Y ~ ., data = X, family = family)
       pred <- .bound(
         as.numeric(predict(fit, newdata = X, type = "response")),
         theta_bounds
@@ -120,28 +91,14 @@ learn_theta <- function(W,
     }
   } else if (method == "glmnet") {
     X <- as.matrix(W)
-
+    fit <- cv.glmnet(x = X, y = Y[delta == 1],
+                     keep = TRUE, alpha = 1, foldid = folds2foldvec(folds),
+                     family = family)
     if (cross_fit_nuisance) {
-      # cross fit
-      walk(folds, function(.x) {
-        train_idx <- .x$training_set
-        valid_idx <- .x$validation_set
-        fit <- cv.glmnet(
-          x = X[train_idx, ][delta[train_idx] == 1, ],
-          y = Y[train_idx][delta[train_idx] == 1], keep = TRUE,
-          alpha = 1, nfolds = length(folds), family = family
-        )
-        pred[valid_idx] <<- .bound(as.numeric(predict(
-          fit,
-          newx = X[valid_idx, ], s = "lambda.min", type = "response"
-        )), theta_bounds)
-      })
+      lambda_min <- fit$lambda[which.min(fit$cvm[!is.na(colSums(fit$fit.preval))])]
+      pred <- as.numeric(fit$fit.preval[,!is.na(colSums(fit$fit.preval))][, fit$lambda[!is.na(colSums(fit$fit.preval))] == lambda_min])
+      pred <- .bound(pred, theta_bounds)
     } else {
-      # no cross fit
-      fit <- cv.glmnet(
-        x = X[delta == 1, ], y = Y[delta == 1], keep = TRUE,
-        alpha = 1, nfolds = length(folds), family = family
-      )
       pred <- .bound(as.numeric(predict(
         fit,
         newx = X, s = "lambda.min", type = "response"

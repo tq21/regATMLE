@@ -5,16 +5,18 @@ get_atmle_eic_psi <- function(tau_A,
                               A,
                               eic_method = "diag") {
   IM <- t(tau_A$x_basis) %*% diag(g1W*(1-g1W)) %*% tau_A$x_basis / nrow(tau_A$x_basis)
-  if (dim(tau_A$x_basis)[2] == 1) {
-    IM_inv <- solve(IM)
-  } else {
+  IM_inv <- tryCatch({
+    solve(IM)
+  }, error = function(e) {
+    # TODO: add helpful message if verbose
     if (eic_method == "svd_pseudo_inv") {
-      # SVD-based pseudo-inverse
-      IM_inv <- svd_pseudo_inv(IM)
+      svd_pseudo_inv(IM)
     } else if (eic_method == "diag") {
-      IM_inv <- solve(IM + diag(1e-3, nrow(IM), ncol(IM)))
+      solve(IM + diag(1e-3, nrow(IM), ncol(IM)))
+    } else {
+      stop("Unknown eic_method specified.")
     }
-  }
+  })
   D_beta <- as.vector(tau_A$x_basis %*% IM_inv %*% colMeans(tau_A$x_basis) * (A-g1W)*(Y-theta-(A-g1W)*tau_A$pred))
   W_comp <- tau_A$pred - mean(tau_A$pred)
 

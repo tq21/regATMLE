@@ -33,7 +33,7 @@ learn_tau_A <- function(W,
                         theta,
                         g1W,
                         delta,
-                        v_folds,
+                        foldid,
                         weights,
                         enumerate_basis_args,
                         browse = FALSE) {
@@ -71,7 +71,7 @@ learn_tau_A <- function(W,
                    weights = pseudo_weights[delta == 1],
                    family = "gaussian",
                    alpha = 1,
-                   nfolds = v_folds,
+                   foldid = foldid[delta == 1],
                    parallel = TRUE)
 
   return(list(pseudo_outcome = pseudo_outcome,

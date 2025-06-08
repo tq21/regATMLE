@@ -56,8 +56,10 @@ learn_g <- function(W,
     lrnr_stack <- Stack$new(method)
     lrnr <- make_learner(Pipeline, Lrnr_cv$new(lrnr_stack),
                          Lrnr_cv_selector$new(loss_loglik_binomial))
-    task <- sl3_Task$new(data = data.table(W, A = A), covariates = colnames(W),
-                         outcome = "A", outcome_type = "binomial")
+    task <- sl3_Task$new(data = data.table(W, A = A),
+                         covariates = colnames(W), outcome = "A",
+                         folds = folds,
+                         outcome_type = "binomial")
     fit <- lrnr$train(task)
     pred <- fit$predict(task)
 
@@ -83,24 +85,18 @@ learn_g <- function(W,
 
   } else if (method == "glmnet") {
 
+    fit <- cv.glmnet(x = W, y = Y[delta == 1],
+                     keep = TRUE, alpha = 1, foldid = folds2foldvec(folds),
+                     family = family)
     if (cross_fit_nuisance) {
-      # cross fit
-      walk(folds, function(.x) {
-        train_idx <- .x$training_set
-        valid_idx <- .x$validation_set
-        fit <- cv.glmnet(x = W[train_idx, , drop = FALSE], y = A[train_idx],
-                         keep = TRUE, alpha = 1, nfolds = length(folds),
-                         family = "binomial")
-        pred[valid_idx] <<- .bound(as.numeric(predict(fit,
-                                                      newx = W[valid_idx, , drop = FALSE], s = "lambda.min", type = "response"
-        )), g_bounds)
-      })
+      lambda_min <- fit$lambda[which.min(fit$cvm[!is.na(colSums(fit$fit.preval))])]
+      pred <- as.numeric(fit$fit.preval[,!is.na(colSums(fit$fit.preval))][, fit$lambda[!is.na(colSums(fit$fit.preval))] == lambda_min])
+      pred <- .bound(pred, g_bounds)
     } else {
-      # no cross fit
-      fit <- cv.glmnet(x = W, y = A, keep = TRUE, alpha = 1,
-                       nfolds = length(folds), family = "binomial")
-      pred <- .bound(as.numeric(predict(fit, newx = W, s = "lambda.min",
-                                        type = "response")), g_bounds)
+      pred <- .bound(as.numeric(predict(
+        fit,
+        newx = W, s = "lambda.min", type = "response"
+      )), g_bounds)
     }
 
   } else {

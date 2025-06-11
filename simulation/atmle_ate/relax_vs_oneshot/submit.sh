@@ -12,8 +12,8 @@
 #SBATCH --time=72:00:00
 #
 # Number of nodes for use case:
-#SBATCH --nodes=7
-#SBATCH --ntasks=7
+#SBATCH --nodes=1
+#SBATCH --ntasks=3
 #SBATCH --cpus-per-task=10
 #
 # Mail type:
@@ -24,7 +24,7 @@
 
 module load r
 
-R CMD BATCH --no-save run_gamma_0.5.R logs/run_gamma_0.Rout &
+R CMD BATCH --no-save run_gamma_0.5.R logs/run_gamma_0.5.Rout &
 R CMD BATCH --no-save run_gamma_3.R logs/run_gamma_3.Rout &
 R CMD BATCH --no-save run_gamma_5.R logs/run_gamma_5.Rout &
 

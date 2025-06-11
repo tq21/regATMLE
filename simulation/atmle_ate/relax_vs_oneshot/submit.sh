@@ -2,12 +2,6 @@
 # Job name:
 #SBATCH --job-name=relax_vs_tmle
 #
-# Partition:
-#SBATCH --partition=savio3
-#
-#SBATCH --qos=biostat_savio3_normal
-#SBATCH --account=co_biostat
-#
 # Wall clock limit ('0' for unlimited):
 #SBATCH --time=72:00:00
 #
@@ -21,8 +15,6 @@
 #
 # Mail user:
 #SBATCH --mail-user=sky.qiu@berkeley.edu
-
-module load r
 
 R CMD BATCH --no-save run_gamma_0.5.R logs/run_gamma_0.5.Rout &
 R CMD BATCH --no-save run_gamma_3.R logs/run_gamma_3.Rout &

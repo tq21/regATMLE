@@ -40,7 +40,8 @@ learn_theta <- function(W,
                         folds,
                         family,
                         theta_bounds,
-                        cross_fit_nuisance) {
+                        cross_fit_nuisance,
+                        enumerate_basis_args) {
   if (is.character(method) && method == "sl3") {
     method <- get_default_sl3_learners(family)
   }
@@ -91,7 +92,7 @@ learn_theta <- function(W,
     }
   } else if (method == "glmnet") {
     X <- as.matrix(W)
-    fit <- cv.glmnet(x = X, y = Y[delta == 1],
+    fit <- cv.glmnet(x = X, y = Y,
                      keep = TRUE, alpha = 1, foldid = folds2foldvec(folds),
                      family = family)
     if (cross_fit_nuisance) {
@@ -102,6 +103,25 @@ learn_theta <- function(W,
       pred <- .bound(as.numeric(predict(
         fit,
         newx = X, s = "lambda.min", type = "response"
+      )), theta_bounds)
+    }
+  } else if (method == "HAL") {
+    basis_list <- enumerate_basis(x = as.matrix(W),
+                                  max_degree = enumerate_basis_args$max_degree,
+                                  smoothness_orders = enumerate_basis_args$smoothness_orders,
+                                  num_knots = enumerate_basis_args$num_knots)
+    hal_design <- make_design_matrix(X = as.matrix(W), blist = basis_list)
+    fit <- cv.glmnet(x = hal_design, y = Y,
+                     keep = TRUE, alpha = 1, foldid = folds2foldvec(folds),
+                     family = family, parallel = TRUE)
+    if (cross_fit_nuisance) {
+      lambda_min <- fit$lambda[which.min(fit$cvm[!is.na(colSums(fit$fit.preval))])]
+      pred <- as.numeric(fit$fit.preval[,!is.na(colSums(fit$fit.preval))][, fit$lambda[!is.na(colSums(fit$fit.preval))] == lambda_min])
+      pred <- .bound(pred, theta_bounds)
+    } else {
+      pred <- .bound(as.numeric(predict(
+        fit,
+        newx = hal_design, s = "lambda.min", type = "response"
       )), theta_bounds)
     }
   } else {

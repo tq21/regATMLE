@@ -14,19 +14,13 @@ library(devtools)
 load_all()
 options(sl3.verbose = FALSE)
 registerDoMC(cores = availableCores()-1)
+source("dgps/sim_data.R")
 set.seed(123)
 B <- 1000
 n_seq <- seq(500, 2000, 500)
 
-run <- function(sim_data, gamma = 0.5) {
-  # make sl3 learners
-  learner_list <- list(
-    Lrnr_xgboost$new(max_depth = 4, nrounds = 20, verbose = 0),
-    Lrnr_xgboost$new(max_depth = 5, nrounds = 20, verbose = 0),
-    Lrnr_ranger$new(),
-    Lrnr_earth$new(degree = 2),
-    Lrnr_gam$new()
-  )
+run <- function(gamma) {
+  enumerate_basis_args <- list(max_degree = 2, smoothness_orders = 1)
 
   res_df <- map_dfr(n_seq, function(.n) {
     map_dfr(seq(B), function(.b) {
@@ -35,7 +29,7 @@ run <- function(sim_data, gamma = 0.5) {
       W <- data[, grep("W", colnames(data))]
       A <- data$A
       Y <- data$Y
-      folds <- make_folds(n = .n, V = 5)
+      folds <- make_folds(n = .n, V = 10)
 
       # data-adaptive truncation of g1W
       n_eff <- .n # number of observed is there is missing
@@ -44,7 +38,7 @@ run <- function(sim_data, gamma = 0.5) {
       # estimate P(A=1|W)
       g1W <- learn_g(W = W,
                      A = A,
-                     method = learner_list,
+                     method = "glm",
                      folds = folds,
                      g_bounds = g_bounds,
                      cross_fit_nuisance = TRUE)
@@ -53,11 +47,12 @@ run <- function(sim_data, gamma = 0.5) {
       theta <- learn_theta(W = W,
                            Y = Y,
                            delta = rep(1, .n),
-                           method = learner_list,
+                           method = "HAL",
                            folds = folds,
                            family = "gaussian",
                            theta_bounds = c(-Inf, Inf),
-                           cross_fit_nuisance = TRUE)
+                           cross_fit_nuisance = TRUE,
+                           enumerate_basis_args = enumerate_basis_args)
 
       # estimate CATE
       tau_A <- learn_tau_A(W = W,
@@ -68,8 +63,7 @@ run <- function(sim_data, gamma = 0.5) {
                            delta = rep(1, .n),
                            foldid = folds2foldvec(folds),
                            weights = rep(1, .n),
-                           enumerate_basis_args = list(max_degree = 2,
-                                                       smoothness_orders = 1),
+                           enumerate_basis_args = enumerate_basis_args,
                            browse = FALSE)
       target_args <- list(W = W,
                           A = A,

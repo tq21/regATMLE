@@ -1,30 +1,27 @@
-# ATTENTION: gamma = 0.5, 1, or 2 to adjust degree of overlap
 sim_data <- function(n,
                      gamma = 0.5,
                      counter_A = NULL) {
   # error
-  UY <- rnorm(n, 0, sqrt(0.5))
+  UY <- rnorm(n, 0, 1)
 
   # baseline covariates
   W1 <- round(runif(n, -1, 1), 3)
   W2 <- round(runif(n, -1, 1), 3)
   W3 <- round(runif(n, -1, 1), 3)
-  W4 <- round(runif(n, -1, 1), 3)
 
   # treatment
   if (is.null(counter_A)) {
-    A <- rbinom(n, 1, plogis(gamma*(W1+W2+W3+W4+sin(4*W1)+sin(4*W2)+sin(4*W3)+sin(4*W4))))
+    A <- rbinom(n, 1, plogis(-0.25*W1+gamma*W2))
   } else {
     A <- rep(counter_A, n)
   }
 
   # outcome
-  Y <- W1+abs(W2)+W3+abs(W4)+A*(1+W1+abs(W2)+cos(4*W3)+W4)+UY
+  Y <- 1.9+1.5*A+2.5*W1*A+0.7*W2*A+1.5*sin(W1+W2)+0.3*abs(W1)+0.9*W1^2+1.4*W2+2.1*W3+UY
 
   data <- data.frame(W1 = W1,
                      W2 = W2,
                      W3 = W3,
-                     W4 = W4,
                      A = A,
                      Y = Y)
 
